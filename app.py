@@ -153,3 +153,14 @@ else:
 
     st.subheader("📊 Inventario por Categoría (Florida)")
     st.dataframe(inventario_por_categoria, use_container_width=True)
+    st.subheader("🔍 Buscar producto en Florida")
+
+buscar = st.text_input("Escribe parte del nombre o referencia:")
+
+if buscar:
+    resultados = floridahay[
+        floridahay["item_name"].str.contains(buscar, case=False, na=False)
+    ]
+    st.dataframe(resultados, use_container_width=True)
+
+    st.info(f"🔎 Resultados encontrados: {len(resultados)}")
