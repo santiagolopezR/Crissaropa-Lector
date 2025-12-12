@@ -9,4 +9,7 @@ numpy
 PyDrive2
 google-auth-oauthlib
 google-auth-httplib2
-opencv2
+streamlit
+Pillow
+pyzbar
+opencv-python-headless
