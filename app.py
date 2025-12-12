@@ -100,25 +100,31 @@ def cargar_inventario(df):
     return pd.DataFrame(warehouse_data)
 
 
-# --- UI ---
-st.title("📦 Inventario Florida (Allegra)")
+st.subheader("📦 Inventario Bodega Florida")
 
-if st.button("🔄 Actualizar datos"):
-    st.cache_data.clear()
+# Filtrar bodega Florida (ojo al espacio final)
+florida = df_inventory[df_inventory["warehouse_name"] == "Florida "]
 
-@st.cache_data(ttl=60)
-def cargar_data_cache():
-    return cargar_items()
+# Quitar nulos
+floridahay = florida[florida["warehouse_available_qty"].notnull()]
 
-df_items, df_raw = cargar_data_cache()
+# Seleccionar columnas
+floridahay = floridahay[["item_name", "warehouse_available_qty", "unit_price", "category"]]
 
-if df_items is None:
-    st.warning("No se pudo cargar el inventario.")
-else:
-    st.subheader("📌 Inventario resumido por producto")
-    st.dataframe(df_items, use_container_width=True)
+# Mostrar tabla
+st.dataframe(floridahay, use_container_width=True)
 
-    df_inventory = cargar_inventario(df_raw)
+# Total artículos
+total_articulos = floridahay["warehouse_available_qty"].sum()
+st.success(f"📦 En Florida hay **{int(total_articulos)} artículos**")
 
-    st.subheader("🏷️ Inventario detallado por bodega")
-    st.dataframe(df_inventory, use_container_width=True)
+# Valor total bodega
+valor_referencia = floridahay["unit_price"] * floridahay["warehouse_available_qty"]
+valor_total_bodega = valor_referencia.sum()
+st.info(f"💰 **Valor total inventario Florida:** ${valor_total_bodega:,.2f}")
+
+# Inventario agrupado por categoría
+inventario_por_categoria = florida.groupby("category", as_index=False)["warehouse_available_qty"].sum()
+
+st.subheader("📊 Inventario por Categoría (Bodega Florida)")
+st.dataframe(inventario_por_categoria, use_container_width=True)
