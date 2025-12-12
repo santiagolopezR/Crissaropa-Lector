@@ -109,7 +109,7 @@ def cargar_inventario(df):
 # UI
 # =====================================================
 
-st.title("📦 Inventario Florida (Allegra)")
+st.title("📦 Inventario Florida Alegra ✅")
 
 if st.button("🔄 Actualizar datos"):
     st.cache_data.clear()
@@ -123,16 +123,14 @@ df_items, df_raw = cargar_data_cache()
 if df_items is None:
     st.warning("No se pudo cargar el inventario.")
 else:
-    st.header("Inventario Bodega Florida ✅")
-
+    
     # Crear dataframe de inventario completo
     df_inventory = cargar_inventario(df_raw)
 
     # =====================================================
     # FILTRAR SOLO BODEGA FLORIDA
     # =====================================================
-    st.header("🌴 Inventario Bodega Florida")
-
+    
     florida = df_inventory[df_inventory["warehouse_name"].str.strip() == "Florida"]
 
     floridahay = florida[florida["warehouse_available_qty"].notnull()]
