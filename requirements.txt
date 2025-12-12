@@ -21,3 +21,4 @@ opencv-python-headless
 pyzxing
 av
 requests
+zbarlight
