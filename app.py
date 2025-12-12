@@ -1,24 +1,37 @@
 import streamlit as st
-from PIL import Image
-import numpy as np
-import zbarlight
+import pandas as pd
+from allegra_api import get_items, get_inventory_detail
 
-st.title("📸 Lector de Código de Barras (Funcional en Cloud)")
+st.set_page_config(page_title="Inventario Florida", layout="wide")
 
-camara = st.camera_input("Tomar foto del código")
+st.title("📦 Inventario Florida - Tiempo Real")
 
-if camara:
-    imagen = Image.open(camara)
-    st.image(imagen, caption="Foto capturada")
+EMAIL = st.secrets["EMAIL"]
+TOKEN = st.secrets["TOKEN"]
 
-    # Convertir a blanco y negro para ZBarlight
-    img_gray = imagen.convert('L')
-    img_np = np.array(img_gray)
+# botón actualizar
+if st.button("🔄 Actualizar Inventario"):
+    st.cache_data.clear()
 
-    # ZBarlight requiere un array 2D puro
-    codes = zbarlight.scan_codes(['ean13', 'code128', 'code39', 'ean8'], img_np)
+@st.cache_data(ttl=60)  # refresca cada 60 segundos
+def load_data():
+    df_items, df_raw = get_items(EMAIL, TOKEN)
+    df_inventory = get_inventory_detail(df_raw)
+    return df_items, df_inventory
 
-    if codes:
-        st.success(f"📦 Código detectado: {codes[0].decode()}")
-    else:
-        st.error("❌ No se detectó ningún código")
+with st.spinner("Cargando datos de Allegra..."):
+    df_items, df_inventory = load_data()
+
+st.subheader("📌 Inventario resumido por producto")
+st.dataframe(df_items, use_container_width=True)
+
+st.subheader("🏷️ Inventario detallado por bodega")
+st.dataframe(df_inventory, use_container_width=True)
+
+# Filtro por búsqueda
+st.subheader("🔍 Buscar producto")
+search = st.text_input("Escriba referencia o nombre")
+
+if search:
+    filtrado = df_inventory[df_inventory["item_name"].str.contains(search, case=False)]
+    st.dataframe(filtrado, use_container_width=True)
