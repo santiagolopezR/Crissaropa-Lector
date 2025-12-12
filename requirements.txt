@@ -1,0 +1,12 @@
+streamlit
+pandas
+openpyxl
+google-auth
+gspread
+matplotlib
+seaborn
+numpy
+PyDrive2
+google-auth-oauthlib
+google-auth-httplib2
+opencv2
