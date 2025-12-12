@@ -21,4 +21,8 @@ opencv-python-headless
 pyzxing
 av
 requests
+streamlit
+Pillow
 zbarlight
+numpy
+opencv-python-headless
