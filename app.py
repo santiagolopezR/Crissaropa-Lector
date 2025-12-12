@@ -6,6 +6,6 @@ import base64
 from streamlit_webrtc import webrtc_streamer, WebRtcMode, RTCConfiguration
 
 st.title("📱 Lector de Códigos de Barras")
-camara=st.camera_input()
+camara=st.camera_input("foto")
 if camara:
     st.image(camara)
