@@ -8,7 +8,7 @@ EMAIL = st.secrets["EMAIL"]
 TOKEN = st.secrets["TOKEN"]
 
 # =====================================================
-# Función para cargar items desde Alegra
+# Función para cargar items desde Alegra (API)
 # =====================================================
 def cargar_items():
     url = "https://api.alegra.com/api/v1/items/"
@@ -21,7 +21,7 @@ def cargar_items():
 
         if response.status_code != 200:
             st.error(f"❌ Error: {response.status_code} - {response.text}")
-            return None, None
+            return None
 
         data = response.json()
 
@@ -34,33 +34,26 @@ def cargar_items():
     df = pd.DataFrame(data_all)
 
     if df.empty:
-        return None, None
-
-    df["item_id"] = df.get("id")
-    df["name"] = df.get("name")
-    df["description"] = df.get("description")
-    df["reference"] = df.get("reference")
-    df["type"] = df.get("type")
-    df["itemcategory"] = df.get("itemCategory")
+        return None
 
     df["unit_price"] = df["price"].apply(
         lambda x: x[0]["price"] if isinstance(x, list) and len(x) > 0 else None
     )
 
-    return df, df  # df_items no lo necesitas realmente
+    return df
+
 
 # =====================================================
-# Cargar inventario por bodegas
+# Procesar inventario
 # =====================================================
-def cargar_inventario(df):
+def cargar_inventario(df_items):
     warehouse_data = []
 
-    for idx, row in df.iterrows():
-        inv = row["inventory"]
+    for _, row in df_items.iterrows():
+        inv = row.get("inventory")
+        category_name = None
 
-        category_id, category_name = None, None
         if isinstance(row.get("itemCategory"), dict):
-            category_id = row["itemCategory"].get("id")
             category_name = row["itemCategory"].get("name")
 
         if isinstance(inv, dict) and "warehouses" in inv:
@@ -79,65 +72,71 @@ def cargar_inventario(df):
 
     return pd.DataFrame(warehouse_data)
 
-# =====================================================
-# BOTÓN DE ACTUALIZAR
-# =====================================================
-
-if st.button("🔄 Actualizar datos"):
-    st.cache_data.clear()
 
 # =====================================================
-# CACHE: SOLO CARGA API SI ES NECESARIO
+# Cargar datos una sola vez (session_state)
 # =====================================================
-@st.cache_data(ttl=60)
-def cargar_data_cache():
-    return cargar_items()
+def cargar_datos_completos():
+    df_items = cargar_items()
+    df_inv = cargar_inventario(df_items)
+    return df_items, df_inv
 
-df_items, df_raw = cargar_data_cache()
+
+# =====================================================
+# BOTÓN PARA ACTUALIZAR LA API
+# =====================================================
+if st.button("🔄 Actualizar datos desde API"):
+    df_items, df_inv = cargar_datos_completos()
+    st.session_state["items"] = df_items
+    st.session_state["inv"] = df_inv
+    st.success("Datos actualizados desde la API")
+
+
+# =====================================================
+# SI NO EXISTEN DATOS EN SESSION, CARGAR UNA VEZ
+# =====================================================
+if "items" not in st.session_state:
+    df_items, df_inv = cargar_datos_completos()
+    st.session_state["items"] = df_items
+    st.session_state["inv"] = df_inv
+
+df_items = st.session_state["items"]
+df_inventory = st.session_state["inv"]
 
 # =====================================================
 # MOSTRAR INVENTARIO
 # =====================================================
-if df_items is None:
-    st.warning("No se pudo cargar el inventario.")
-else:
+st.title("📦 Inventario Florida Alegra")
 
-    df_inventory = cargar_inventario(df_raw)
+florida = df_inventory[df_inventory["warehouse_name"].str.strip() == "Florida"]
 
-    st.title("📦 Inventario Florida Alegra")
+floridahay = florida[
+    florida["warehouse_available_qty"].notnull()
+][["item_name", "warehouse_available_qty", "unit_price", "category"]]
 
-    # Filtrar Florida
-    florida = df_inventory[df_inventory["warehouse_name"].str.strip() == "Florida"]
+st.subheader("📋 Productos disponibles en Florida")
+st.dataframe(floridahay, use_container_width=True)
 
-    floridahay = florida[
-        florida["warehouse_available_qty"].notnull()
-    ][["item_name", "warehouse_available_qty", "unit_price", "category"]]
+total_articulos = floridahay["warehouse_available_qty"].sum()
+st.success(f"📦 En Florida hay **{int(total_articulos)} artículos**")
 
-    st.subheader("📋 Productos disponibles en Florida")
-    st.dataframe(floridahay, use_container_width=True)
+inventario_por_categoria = florida.groupby("category", as_index=False)[
+    "warehouse_available_qty"
+].sum()
 
-    # Total artículos
-    total_articulos = floridahay["warehouse_available_qty"].sum()
-    st.success(f"📦 En Florida hay **{int(total_articulos)} artículos**")
+st.subheader("📊 Inventario por Categoría")
+st.dataframe(inventario_por_categoria, use_container_width=True)
 
-    # Por categoría
-    inventario_por_categoria = florida.groupby("category", as_index=False)[
-        "warehouse_available_qty"
-    ].sum()
+# =====================================================
+# BUSCADOR LOCAL (NO API)
+# =====================================================
+st.subheader("🔍 Buscar producto")
 
-    st.subheader("📊 Inventario por Categoría (Florida)")
-    st.dataframe(inventario_por_categoria, use_container_width=True)
+buscar = st.text_input("Escribe parte del nombre o referencia:")
 
-    # =====================================================
-    # BUSCADOR LOCAL (NO API)
-    # =====================================================
-    st.subheader("🔍 Buscar producto en Florida")
-
-    buscar = st.text_input("Escribe parte del nombre o referencia:")
-
-    if buscar:
-        resultados = floridahay[
-            floridahay["item_name"].str.contains(buscar, case=False, na=False)
-        ]
-        st.dataframe(resultados, use_container_width=True)
-        st.info(f"🔎 Resultados encontrados: {len(resultados)}")
+if buscar:
+    resultados = floridahay[
+        floridahay["item_name"].str.contains(buscar, case=False, na=False)
+    ]
+    st.dataframe(resultados, use_container_width=True)
+    st.info(f"🔎 Resultados encontrados: {len(resultados)}")
