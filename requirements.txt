@@ -20,3 +20,4 @@ streamlit-webrtc
 opencv-python-headless
 pyzxing
 av
+requests
