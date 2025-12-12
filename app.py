@@ -126,6 +126,8 @@ df_items, df_raw = cargar_data_cache()
 
 if df_items is None:
     st.warning("No se pudo cargar el inventario.")
+    else:
+    st.header("Inventario Bodega Florida ✅")
 
 
     # =====================================================
