@@ -8,7 +8,7 @@ EMAIL = st.secrets["EMAIL"]
 TOKEN = st.secrets["TOKEN"]
 
 # =====================================================
-# 1. Cargar items desde Alegra
+# 1. Cargar items desde Alegra (API)
 # =====================================================
 def cargar_items():
     url = "https://api.alegra.com/api/v1/items/"
@@ -36,6 +36,7 @@ def cargar_items():
     if df.empty:
         return None, None
 
+    # Aplanar campos importantes
     df["item_id"] = df.get("id")
     df["name"] = df.get("name")
     df["description"] = df.get("description")
@@ -66,8 +67,9 @@ def cargar_items():
 
     return df_items, df
 
+
 # =====================================================
-# 2. Cargar inventario por bodegas
+# 2. Cargar inventario detallado con bodegas
 # =====================================================
 def cargar_inventario(df):
     warehouse_data = []
@@ -106,7 +108,7 @@ def cargar_inventario(df):
 
 
 # =====================================================
-# UI
+# UI PRINCIPAL
 # =====================================================
 
 st.title("📦 Inventario Florida Alegra ✅")
@@ -114,6 +116,7 @@ st.title("📦 Inventario Florida Alegra ✅")
 if st.button("🔄 Actualizar datos"):
     st.cache_data.clear()
 
+# Cachea los datos por 60 segundos
 @st.cache_data(ttl=60)
 def cargar_data_cache():
     return cargar_items()
@@ -123,14 +126,13 @@ df_items, df_raw = cargar_data_cache()
 if df_items is None:
     st.warning("No se pudo cargar el inventario.")
 else:
-    
-    # Crear dataframe de inventario completo
+
     df_inventory = cargar_inventario(df_raw)
 
     # =====================================================
     # FILTRAR SOLO BODEGA FLORIDA
     # =====================================================
-    
+
     florida = df_inventory[df_inventory["warehouse_name"].str.strip() == "Florida"]
 
     floridahay = florida[florida["warehouse_available_qty"].notnull()]
@@ -153,14 +155,19 @@ else:
 
     st.subheader("📊 Inventario por Categoría (Florida)")
     st.dataframe(inventario_por_categoria, use_container_width=True)
+
+    # =====================================================
+    # BUSCADOR SUPER RÁPIDO (NO recarga datos)
+    # =====================================================
+
     st.subheader("🔍 Buscar producto en Florida")
 
-buscar = st.text_input("Escribe parte del nombre o referencia:")
+    buscar = st.text_input("Escribe parte del nombre o referencia:")
 
-if buscar:
-    resultados = floridahay[
-        floridahay["item_name"].str.contains(buscar, case=False, na=False)
-    ]
-    st.dataframe(resultados, use_container_width=True)
+    if buscar:
+        resultados = floridahay[
+            floridahay["item_name"].str.contains(buscar, case=False, na=False)
+        ]
 
-    st.info(f"🔎 Resultados encontrados: {len(resultados)}")
+        st.dataframe(resultados, use_container_width=True)
+        st.info(f"🔎 Resultados encontrados: {len(resultados)}")
