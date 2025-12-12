@@ -120,23 +120,19 @@ def cargar_data_cache():
 
 df_items, df_raw = cargar_data_cache()
 
-# =====================================================
-# MOSTRAR INVENTARIO GENERAL
-# =====================================================
-
 if df_items is None:
     st.warning("No se pudo cargar el inventario.")
-    else:
+else:
     st.header("Inventario Bodega Florida ✅")
 
+    # Crear dataframe de inventario completo
+    df_inventory = cargar_inventario(df_raw)
 
     # =====================================================
     # FILTRAR SOLO BODEGA FLORIDA
     # =====================================================
-
     st.header("🌴 Inventario Bodega Florida")
 
-    # corregir espacios por si acaso
     florida = df_inventory[df_inventory["warehouse_name"].str.strip() == "Florida"]
 
     floridahay = florida[florida["warehouse_available_qty"].notnull()]
@@ -152,14 +148,10 @@ if df_items is None:
     total_articulos = floridahay["warehouse_available_qty"].sum()
     st.success(f"📦 En Florida hay **{int(total_articulos)} artículos**")
 
-   
-    
-    # Inventario agrupado por categoría
+    # Inventario por categoría
     inventario_por_categoria = florida.groupby("category", as_index=False)[
         "warehouse_available_qty"
     ].sum()
 
     st.subheader("📊 Inventario por Categoría (Florida)")
     st.dataframe(inventario_por_categoria, use_container_width=True)
-    
-    
