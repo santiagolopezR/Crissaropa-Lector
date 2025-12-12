@@ -7,6 +7,9 @@ st.set_page_config(page_title="Inventario Florida", layout="wide")
 EMAIL = st.secrets["EMAIL"]
 TOKEN = st.secrets["TOKEN"]
 
+# =====================================================
+# 1. Cargar items desde Alegra
+# =====================================================
 def cargar_items():
     url = "https://api.alegra.com/api/v1/items/"
     data_all = []
@@ -63,7 +66,9 @@ def cargar_items():
 
     return df_items, df
 
-
+# =====================================================
+# 2. Cargar inventario por bodegas
+# =====================================================
 def cargar_inventario(df):
     warehouse_data = []
 
@@ -100,31 +105,69 @@ def cargar_inventario(df):
     return pd.DataFrame(warehouse_data)
 
 
-st.subheader("📦 Inventario Bodega Florida")
+# =====================================================
+# UI
+# =====================================================
 
-# Filtrar bodega Florida (ojo al espacio final)
-florida = df_inventory[df_inventory["warehouse_name"] == "Florida "]
+st.title("📦 Inventario Florida (Allegra)")
 
-# Quitar nulos
-floridahay = florida[florida["warehouse_available_qty"].notnull()]
+if st.button("🔄 Actualizar datos"):
+    st.cache_data.clear()
 
-# Seleccionar columnas
-floridahay = floridahay[["item_name", "warehouse_available_qty", "unit_price", "category"]]
+@st.cache_data(ttl=60)
+def cargar_data_cache():
+    return cargar_items()
 
-# Mostrar tabla
-st.dataframe(floridahay, use_container_width=True)
+df_items, df_raw = cargar_data_cache()
 
-# Total artículos
-total_articulos = floridahay["warehouse_available_qty"].sum()
-st.success(f"📦 En Florida hay **{int(total_articulos)} artículos**")
+# =====================================================
+# MOSTRAR INVENTARIO GENERAL
+# =====================================================
 
-# Valor total bodega
-valor_referencia = floridahay["unit_price"] * floridahay["warehouse_available_qty"]
-valor_total_bodega = valor_referencia.sum()
-st.info(f"💰 **Valor total inventario Florida:** ${valor_total_bodega:,.2f}")
+if df_items is None:
+    st.warning("No se pudo cargar el inventario.")
+else:
+    st.subheader("📌 Inventario resumido por producto")
+    st.dataframe(df_items, use_container_width=True)
 
-# Inventario agrupado por categoría
-inventario_por_categoria = florida.groupby("category", as_index=False)["warehouse_available_qty"].sum()
+    df_inventory = cargar_inventario(df_raw)
 
-st.subheader("📊 Inventario por Categoría (Bodega Florida)")
-st.dataframe(inventario_por_categoria, use_container_width=True)
+    st.subheader("🏷️ Inventario detallado por bodega")
+    st.dataframe(df_inventory, use_container_width=True)
+
+
+    # =====================================================
+    # FILTRAR SOLO BODEGA FLORIDA
+    # =====================================================
+
+    st.header("🌴 Inventario Bodega Florida")
+
+    # corregir espacios por si acaso
+    florida = df_inventory[df_inventory["warehouse_name"].str.strip() == "Florida"]
+
+    floridahay = florida[florida["warehouse_available_qty"].notnull()]
+
+    floridahay = floridahay[
+        ["item_name", "warehouse_available_qty", "unit_price", "category"]
+    ]
+
+    st.subheader("📋 Productos disponibles en Florida")
+    st.dataframe(floridahay, use_container_width=True)
+
+    # Total artículos
+    total_articulos = floridahay["warehouse_available_qty"].sum()
+    st.success(f"📦 En Florida hay **{int(total_articulos)} artículos**")
+
+    # Valor total bodega
+    valor_referencia = floridahay["unit_price"] * floridahay["warehouse_available_qty"]
+    valor_total_bodega = valor_referencia.sum()
+
+    st.info(f"💰 **Valor total inventario Florida:** ${valor_total_bodega:,.2f}")
+
+    # Inventario agrupado por categoría
+    inventario_por_categoria = florida.groupby("category", as_index=False)[
+        "warehouse_available_qty"
+    ].sum()
+
+    st.subheader("📊 Inventario por Categoría (Florida)")
+    st.dataframe(inventario_por_categoria, use_container_width=True)
