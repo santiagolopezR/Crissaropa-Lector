@@ -51,7 +51,10 @@ def crear_tabla_inventario(df):
 
     for _, row in df.iterrows():
         inv = row.get("inventory")
-        category = row.get("itemCategory", {}).get("name")
+        category = None
+if isinstance(row.get("itemCategory"), dict):
+    category = row["itemCategory"].get("name")
+
 
         if isinstance(inv, dict):
             for wh in inv.get("warehouses", []):
