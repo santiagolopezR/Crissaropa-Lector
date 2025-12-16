@@ -1,29 +1,24 @@
-import requests
-import streamlit as st
+from fastapi import FastAPI
+from pydantic import BaseModel
+from datetime import datetime
 
-API_URL = "http://192.168.1.11:8000/last"
+app = FastAPI()
 
-st.subheader("📲 Último código escaneado")
+ultimo_scan = {
+    "code": None,
+    "timestamp": None
+}
 
-try:
-    r = requests.get(API_URL, timeout=2)
-    data = r.json()
-    codigo = data.get("code")
+class Scan(BaseModel):
+    code: str
 
-    if codigo:
-        st.success(f"📦 Código escaneado: {codigo}")
+@app.post("/scan")
+def recibir_scan(scan: Scan):
+    ultimo_scan["code"] = scan.code
+    ultimo_scan["timestamp"] = datetime.now().isoformat()
+    return {"status": "ok"}
 
-        resultado = floridahay[
-            floridahay["reference"].astype(str).str.contains(
-                codigo, case=False, na=False
-            )
-        ]
-
-        st.dataframe(resultado, use_container_width=True)
-
-    else:
-        st.info("Esperando escaneo...")
-
-except Exception as e:
-    st.error("No se puede conectar a la API de escaneo")
+@app.get("/last")
+def ultimo_codigo():
+    return ultimo_scan
 
