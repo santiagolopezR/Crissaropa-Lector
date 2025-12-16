@@ -1,23 +1,18 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from datetime import datetime
-st.title("PÁGINA TEST")
-app = FastAPI()
+import streamlit as st
+import requests
 
-ultimo_scan = {
-    "code": None,
-    "timestamp": None
-}
+API_URL = "http://192.168.1.11:8000/last"
 
-class Scan(BaseModel):
-    code: str
+st.set_page_config(page_title="Escáner", layout="centered")
 
-@app.post("/scan")
-def recibir_scan(scan: Scan):
-    ultimo_scan["code"] = scan.code
-    ultimo_scan["timestamp"] = datetime.now().isoformat()
-    return {"status": "ok"}
+st.title("📷 Escáner en tiempo real")
 
-@app.get("/last")
-def ultimo_codigo():
-    return ultimo_scan
+if st.button("🔄 Leer último código"):
+    try:
+        data = requests.get(API_URL, timeout=5).json()
+        st.success(f"📦 Código: **{data['code']}**")
+        st.caption(f"🕒 {data.get('timestamp','')}")
+    except Exception as e:
+        st.error("No se pudo conectar al escáner")
+
+st.info("Escanea desde el celular y luego presiona el botón.")
