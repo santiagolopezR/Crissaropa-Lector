@@ -4,6 +4,7 @@ import requests
 import os
 
 st.set_page_config(page_title="Inventario Florida", layout="wide")
+st.sidebar.success("Seleccione.")
 
 
 EMAIL = st.secrets["EMAIL"]
