@@ -3,15 +3,39 @@ import pandas as pd
 import requests
 import os
 
-st.sidebar.success("Seleccione.")
+import streamlit as st
+
 st.set_page_config(
     page_title="Sistema Inventario",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-st.title("🏠 Sistema de Inventario")
+st.sidebar.title("📂 Menú")
 
+pagina = st.sidebar.radio(
+    "Ir a:",
+    [
+        "🏠 Inicio",
+        "📦 Inventario Florida",
+        "📷 Escáner"
+    ]
+)
+
+# ======================
+# NAVEGACIÓN
+# ======================
+if pagina == "🏠 Inicio":
+    st.title("🏠 Sistema de Inventario")
+    st.write("Selecciona una opción en el menú.")
+
+elif pagina == "📦 Inventario Florida":
+    import pages.inventario_florida as inventario
+    inventario.run()
+
+elif pagina == "📷 Escáner":
+    import pages.escaner as escaner
+    escaner.run()
 EMAIL = st.secrets["EMAIL"]
 TOKEN = st.secrets["TOKEN"]
 
