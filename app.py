@@ -6,6 +6,4 @@ st.set_page_config(
 )
 
 st.title("🏠 Sistema de Inventario")
-st.write("Usa el menú lateral para navegar entre páginas.")
-
-st.info("📂 Las opciones están en el panel izquierdo")
+st.write("Usa el menú lateral (hamburguesa) para navegar entre páginas.")
